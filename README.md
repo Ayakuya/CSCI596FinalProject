@@ -1,7 +1,7 @@
 # CSCI596FinalProject
 ## Table of contents
 * [General info](#general-info)
-* [Technologies](#technologies)
+* [Technologies](#technologies-&-libraries)
 * [Setup](#setup)
 
 ## General info
