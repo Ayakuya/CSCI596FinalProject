@@ -158,7 +158,7 @@ class Model:
         fig = matplotlib.pyplot.gcf()
         fig.set_size_inches(12, 8)
         fig.savefig('Kinetic Energy.pdf')
-        plt.show()
+        # plt.show()
 
         # Plot
         plt.rcParams.update({'font.size': 16})
@@ -170,7 +170,7 @@ class Model:
         fig = matplotlib.pyplot.gcf()
         fig.set_size_inches(12, 8)
         fig.savefig('Flow.pdf')
-        plt.show()
+        # plt.show()
 
 
 def execute(data):

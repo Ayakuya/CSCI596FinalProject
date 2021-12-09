@@ -8,8 +8,10 @@ entry_filename = None
 e1, e2, e3, e4, e5, e6 = None, None, None, None, None, None
 
 result_dict = dict()
+result_dict.update({"D": ""})
 result_dict.update({"X": 0})
 result_dict.update({"Y": 0})
+result_dict.update({"Z": 0})
 result_dict.update({"Cylinder": []})
 result_dict.update({"Square": []})
 result_dict.update({"Rectangle": []})
@@ -39,13 +41,17 @@ def toFileName():
     file = open(filename, encoding='utf-8')
     lines = file.readlines()
     lines = [line.rstrip() for line in lines]
+    dimension = ""
     if "2D" in lines[0]:
         dimension = "2D"
     if "3D" in lines[0]:
         dimension = "2D"
     shape = lines[2]
-    width = int(shape.split(", ")[0])
-    height = int(shape.split(", ")[1])
+    width = int(shape.split(",")[0])
+    height = int(shape.split(",")[1])
+    z = 0
+    if dimension == "3D":
+        z = int(shape.split(",")[2])
     cylinder = []
     square = []
     rectangle = []
@@ -96,8 +102,11 @@ def toFileName():
                     p.append((int(l[k * 2][1:]), int(l[k * 2 + 1][:len(l[k * 2 + 1]) - 1])))
                 polygon.append(p)
             i += 1
+    result_dict.update({"D": dimension})
     result_dict.update({"X": width})
     result_dict.update({"Y": height})
+    if dimension == "3D":
+        result_dict.update({"Z": z})
     result_dict.update({"Cylinder": cylinder})
     result_dict.update({"Square": square})
     result_dict.update({"Rectangle": rectangle})

@@ -1,40 +1,48 @@
-import lettuce as lt
-import torch
-import numpy as np
+import cProfile
+import io
+import pstats
+
 import matplotlib.pyplot as plt
-from lettuce import Lattice, D2Q9, Obstacle2D, Obstacle3D, Observable
+import matplotlib
+import numpy as np
+import torch
+from shapely.geometry import Point
+from shapely.geometry.polygon import Polygon
+
+import lettuce as lt
+from lettuce import Lattice, D3Q27, Obstacle3D
 from lettuce import UnitConversion, BounceBackBoundary, EquilibriumBoundaryPU
 
 
-class Setup:
-    def __init__(self, d, l):
-        self.device = torch.device(d)
-        self.stencil = l
-        self.dtype = torch.float32
-
-    def setupLattice(self):
-        lattice = lt.Lattice(self.stencil, device=self.device, dtype=self.dtype)
-        return lattice
-
-
-class Map:
-    def __init__(self, lattice, x, y, r, m, l):
-        self.flow = Obstacle2D(
+class Obstacles:
+    def __init__(self, lattice, x, y, z, r, m, l):
+        self.flow = Obstacle3D(
             resolution_x=x,
             resolution_y=y,
+            resolution_z=z,
             reynolds_number=r,
             mach_number=m,
             lattice=lattice,
             char_length_lu=l
         )
-        x, y = self.flow.grid
+        x, y, z = self.flow.grid
         self.x = self.flow.units.convert_length_to_lu(x)
         self.y = self.flow.units.convert_length_to_lu(y)
+        self.z = self.flow.units.convert_length_to_lu(z)
         self.conditions = []
 
     def setSquareObstacle(self, xpos, ypos, length):
         # Square:
-        condition = (self.x - xpos) <= length and (self.y - ypos) <= length
+        square = np.zeros(self.x.shape, dtype=bool)
+        N = self.x.shape[0]
+        M = self.x.shape[1]
+        for i in range(N):
+            for j in range(M):
+                if xpos <= i <= xpos + length and ypos <= j <= ypos + length:
+                    square[i, j] = True
+                else:
+                    square[i, j] = False
+        condition = square
         self.conditions.append(condition)
 
     def setCylinderObstacle(self, xpos, ypos, r):
@@ -44,94 +52,149 @@ class Map:
 
     def setRectObstacle(self, xpos, ypos, xlength, ylength):
         # Rectangle:
-        condition = (self.x - xpos) <= xlength and (self.y - ypos) <= ylength
+        rect = np.zeros(self.x.shape, dtype=bool)
+        N = self.x.shape[0]
+        M = self.x.shape[1]
+        for i in range(N):
+            for j in range(M):
+                if xpos <= i <= xpos + xlength and ypos <= j <= ypos + ylength:
+                    rect[i, j] = True
+                else:
+                    rect[i, j] = False
+        condition = rect
+        self.conditions.append(condition)
+
+    def setPolygonObstacle(self, polygon):
+        poly = np.zeros(self.x.shape, dtype=bool)
+        N = self.x.shape[0]
+        M = self.x.shape[1]
+        for i in range(N):
+            for j in range(M):
+                point = Point(i, j)
+                poly[i, j] = point.within(polygon)
+        condition = poly
         self.conditions.append(condition)
 
     def setObstacle(self):
         for c in self.conditions:
             self.flow.mask[np.where(c)] = 1
 
-
-class Collision:
-    def __init__(self, lattice, flow):
-        self.BGKCollision = lt.BGKCollision(lattice, tau=flow.units.relaxation_parameter_lu)
-        self.RegularizedCollision = lt.RegularizedCollision(lattice, tau=flow.units.relaxation_parameter_lu)
-        self.KBCCollision2D = lt.KBCCollision2D(lattice, tau=flow.units.relaxation_parameter_lu)
+    def getFlow(self):
+        return self.flow
 
 
-def plot(datas):
-    X = np.arange(1, 10)
-    Y = np.arange(1, 10)
-    X, Y = np.meshgrid(X, Y)
-    R = np.sqrt(X ** 2 + Y ** 2)
-    Z = np.sin(R)
-    fig = plt.figure()
-    ax = fig.gca(projection='3d')
-    surf = ax.plot_surface(X, Y, Z, rstride=1, cstride=1, cmap='hot', linewidth=0, antialiased=False)
-    ax.set_zlim(-1.01, 1.01)
+class Model:
+    def __init__(self, d, l):
+        self.lattice = None
+        self.flow = None
+        self.collision = None
+        self.streaming = None
+        self.simulation = None
+        self.device = torch.device(d)
+        self.stencil = l
+        self.dtype = torch.float32
+        self.obstacle = None
 
-    fig.colorbar(surf, shrink=0.5, aspect=5)
-    plt.show()
+    def initialization(self, data):
+        self.setupLattice()
+        self.obstacle = Obstacles(self.lattice, data["X"], data["Y"], data["Z"], 100, 0.1, 10)
+        # setup obstacle
+        for c in data["Cylinder"]:
+            self.obstacle.setCylinderObstacle(c[0], c[1], c[2])
+        self.obstacle.setObstacle()
+        flow = self.obstacle.flow
+        self.setupFlow(flow)
+        self.setupCollision("BGKCollision")
+        self.setupStreaming()
+        self.setupSimulation()
+
+    def setupLattice(self):
+        self.lattice = lt.Lattice(self.stencil, device=self.device, dtype=self.dtype)
+
+    def setupCollision(self, type):
+        if type == "BGKCollision":
+            self.collision = lt.BGKCollision(self.lattice, tau=self.flow.units.relaxation_parameter_lu)
+        if type == "RegularizedCollision":
+            self.collision = lt.RegularizedCollision(self.lattice, tau=self.flow.units.relaxation_parameter_lu)
+        if type == "KBCCollision2D":
+            self.collision = lt.KBCCollision2D(self.lattice, tau=self.flow.units.relaxation_parameter_lu)
+
+    def setupStreaming(self):
+        self.streaming = lt.StandardStreaming(self.lattice)
+
+    def setupSimulation(self):
+        self.simulation = lt.Simulation(flow=self.flow, lattice=self.lattice, collision=self.collision,
+                                        streaming=self.streaming)
+
+    def setupFlow(self, flow):
+        self.flow = flow
+
+    def simulationOutput(self):
+        Energy = lt.IncompressibleKineticEnergy(self.lattice, self.flow)
+        reporter = lt.ObservableReporter(Energy, interval=1000, out=None)
+        self.simulation.reporters.append(reporter)
+        self.simulation.reporters.append(
+            lt.VTKReporter(self.lattice, self.flow, interval=100, filename_base="./output"))
+        self.simulation.initialize_f_neq()
+        mlups = self.simulation.step(num_steps=10000)
+        print("Performance in MLUPS:", mlups)
+
+    def processEnergy(self):
+        energy = np.array(self.simulation.reporters[0].out)
+
+        # Kinetic Energy
+        plt.rcParams.update({'font.size': 16})
+        plt.rc('font', family='serif')
+        plt.rc('axes', axisbelow=True)
+        plt.grid(linestyle="--")
+        plt.plot(energy[:, 1], energy[:, 2])
+        plt.title('Kinetic energy')
+        plt.xlabel('Time', labelpad=12)
+        plt.ylabel('Energy in physical units', labelpad=12)
+        fig = matplotlib.pyplot.gcf()
+        fig.set_size_inches(12, 8)
+        fig.savefig('Kinetic Energy.pdf')
+        # plt.show()
+
+        # Plot
+        plt.rcParams.update({'font.size': 16})
+        plt.rc('font', family='serif')
+        plt.rc('axes', axisbelow=True)
+        u = self.flow.units.convert_velocity_to_pu(self.lattice.u(self.simulation.f)).numpy()
+        u_norm = np.linalg.norm(u, axis=0)
+        plt.imshow(u_norm)
+        fig = matplotlib.pyplot.gcf()
+        fig.set_size_inches(12, 8)
+        fig.savefig('Flow.pdf')
+        # plt.show()
 
 
-class IncompressibleKineticEnergy(Observable):
-    """Total kinetic energy of an incompressible flow."""
+def execute(data):
+    pr = cProfile.Profile()
+    pr.enable()
+    s = Model(torch.device("cpu"), lt.D3Q27)
+    s.initialization(data)
+    # s.setupLattice()
+    # o = Obstacles(s.lattice, 501, 301, 100, 0.1, 10)
+    # o.setCylinderObstacle(150, 150, 20)
+    # o.setCylinderObstacle(300, 150, 20)
+    # o.setObstacle()
+    # flow = o.getFlow()
+    #
+    # s.setupFlow(flow)
+    # s.setupCollision("BGKCollision")
+    # s.setupStreaming()
+    # s.setupSimulation()
+    #
+    s.simulationOutput()
+    s.processEnergy()
 
-    def __call__(self, f):
-        dx = self.flow.units.convert_length_to_pu(1.0)
-        kinE = self.flow.units.convert_incompressible_energy_to_pu(torch.sum(self.lattice.incompressible_energy(f)))
-        kinE *= dx ** self.lattice.D
-        return kinE
+    pr.disable()
+    s = io.StringIO()
 
+    ps = pstats.Stats(pr, stream=s).sort_stats('tottime')
+    ps.print_stats()
+    print(s.getvalue())
 
-def main():
-    s = Setup(torch.device("cpu"), lt.D3Q27)
-    lattice = s.setupLattice()
-    # flow = lt.TaylorGreenVortex3D(resolution=256, reynolds_number=100, mach_number=0.05, lattice=lattice)
-    # flow = lt.TaylorGreenVortex3D(resolution=256, reynolds_number=1600, mach_number=0.05, lattice=lattice)
-
-    flow = Obstacle3D(
-        resolution_x=101,
-        resolution_y=81,
-        resolution_z=11,
-        reynolds_number=100,
-        mach_number=0.1,
-        lattice=lattice,
-        char_length_lu=10
-    )
-    x, y, z = flow.grid
-    x = flow.units.convert_length_to_lu(x)
-    y = flow.units.convert_length_to_lu(y)
-    z = flow.units.convert_length_to_lu(z)
-    condition = np.sqrt((x - 50) ** 2 + (y - 30) ** 2) < 20
-    flow.mask[np.where(condition)] = 1
-
-    collision = lt.BGKCollision(lattice, tau=flow.units.relaxation_parameter_lu)
-    streaming = lt.StandardStreaming(lattice)
-    simulation = lt.Simulation(flow=flow, lattice=lattice, collision=collision, streaming=streaming)
-
-    Energy = IncompressibleKineticEnergy(lattice, flow)
-    reporter = lt.ObservableReporter(Energy, interval=1000, out=None)
-    simulation.reporters.append(reporter)
-    simulation.reporters.append(lt.VTKReporter(lattice, flow, interval=100, filename_base="./output"))
-
-    simulation.initialize_f_neq()
-    mlups = simulation.step(num_steps=10000)
-    print("Performance in MLUPS:", mlups)
-
-    energy = np.array(simulation.reporters[0].out)
-    print(energy.shape)
-    plt.plot(energy[:, 1], energy[:, 2])
-    plt.title('Kinetic energy')
-    plt.xlabel('Time')
-    plt.ylabel('Energy in physical units')
-    plt.show()
-
-    u = flow.units.convert_velocity_to_pu(lattice.u(simulation.f)).numpy()
-    u_norm = np.linalg.norm(u, axis=0)
-    # plt.imshow(u_norm)
-    print(u_norm.shape)
-
-
-if __name__ == '__main__':
-    main()
+    with open('profile.txt', 'w+') as f:
+        f.write(s.getvalue())
