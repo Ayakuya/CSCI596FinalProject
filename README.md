@@ -7,7 +7,9 @@
 
 ## General info
 This project is a CFD simulation and Visualization project. It used Lettuce to do the simulation and PyVista to do the visualization. The simulation part is based on Lettuce, which is a LBM based code with PyTorch implementation. PyVista is a module for the Visualization Toolkit (VTK), with a different approach on interfacing with VTK through NumPy and direct array access[^1].
-	![2D Visualization Example](example.gif) 
+In this project, it starts with a simple GUI, which can use the file link to input Obstacle information or manually input the information (2D) into the code. Then it will calculate the simulation and output with 100 VTK files to save the simulation data. Then, PyVista will process all the VTK files (ending in .vtr) and generate a gif file named output.gif.
+	![2D Visualization Example](example2D.gif) 
+	![3D Visualization Example](example3D.gif) 
 ## Technologies & Libraries
 Project is created with:
 * Anaconda
