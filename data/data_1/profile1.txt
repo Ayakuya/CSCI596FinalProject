@@ -1,3 +1,4 @@
+Performance in MLUPS: 3.4435090588607298
          8590547 function calls (8514263 primitive calls) in 358.925 seconds
 
    Ordered by: internal time
