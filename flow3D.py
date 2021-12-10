@@ -157,18 +157,18 @@ class Model:
         # plt.show()
 
         # Plot
-        plt.rcParams.update({'font.size': 16})
-        plt.rc('font', family='serif')
-        plt.rc('axes', axisbelow=True)
+        # plt.rcParams.update({'font.size': 16})
+        # plt.rc('font', family='serif')
+        # plt.rc('axes', axisbelow=True)
         # cpu
-        u = self.flow.units.convert_velocity_to_pu(self.lattice.u(self.simulation.f)).numpy()
+        # u = self.flow.units.convert_velocity_to_pu(self.lattice.u(self.simulation.f)).numpy()
         # cuda
         # u = self.flow.units.convert_velocity_to_pu(self.lattice.u(self.simulation.f)).cpu().numpy()
-        u_norm = np.linalg.norm(u, axis=0)
-        plt.imshow(u_norm)
-        fig = matplotlib.pyplot.gcf()
-        fig.set_size_inches(12, 8)
-        fig.savefig('Flow.pdf')
+        # u_norm = np.linalg.norm(u, axis=0)
+        # plt.imshow(u_norm)
+        # fig = matplotlib.pyplot.gcf()
+        # fig.set_size_inches(12, 8)
+        # fig.savefig('Flow.pdf')
         # plt.show()
 
 

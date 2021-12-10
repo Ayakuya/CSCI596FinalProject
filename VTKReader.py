@@ -3,7 +3,7 @@ import pyvista
 import numpy as np
 
 
-def generateGif():
+def generateGif(dimension):
     filename = "output_00000000.vtr"
     reader = pyvista.get_reader(filename)
 
@@ -21,7 +21,10 @@ def generateGif():
     mesh = reader.read()
     plotter.add_mesh(mesh)
 
-    nframe = 100
+    if dimension == "2D":
+        nframe = 100
+    else:
+        nframe = 20
     for i in range(1, nframe):
         st = ""
         if len(str(i * 100)) <= len("00000000"):

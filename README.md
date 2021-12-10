@@ -9,7 +9,7 @@
 
 ## General info
 The initial inspiration of this project is using not commonly used programming languages to do simulation and visualization, such as python, which is not as popular as C++ in visualization. 
-This project is a CFD simulation and Visualization project. It used Lettuce to do the simulation and PyVista to do the visualization. The simulation part is based on Lettuce, which is a LBM based code with PyTorch implementation. PyVista is a module for the Visualization Toolkit (VTK), with a different approach on interfacing with VTK through NumPy and direct array access[^1].
+This project is a CFD simulation and Visualization project. It used Lettuce to do the simulation and PyVista to do the visualization. The simulation part is based on Lettuce, which is a LBM based code with PyTorch implementation[^2]. PyVista is a module for the Visualization Toolkit (VTK), with a different approach on interfacing with VTK through NumPy and direct array access[^1].
 This project contains two parts:
 1. 2D and 3D simulation and visualization
 2. A proposal based on effeciency analysis case study
@@ -42,3 +42,4 @@ $ conda install -c conda-forge pyevtk
 
 ## Reference
 [^1]: https://docs.pyvista.org/
+[^2]: https://github.com/lettucecfd/lettuce

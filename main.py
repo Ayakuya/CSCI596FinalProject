@@ -1,19 +1,17 @@
-import matplotlib.pyplot as plt
-import numpy as np
-from matplotlib import cm
 import GUI
-import flow2D, flow3D
 import VTKReader
+import flow2D
+import flow3D
 
 
 def main():
     data = GUI.GUI()
     if data["D"] == "2D":
         flow2D.execute(data)
-        VTKReader.generateGif()
+        VTKReader.generateGif(data["D"])
     else:
         flow3D.execute(data)
-        VTKReader.generateGif()
+        VTKReader.generateGif(data["D"])
 
 
 if __name__ == '__main__':
