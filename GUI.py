@@ -45,7 +45,7 @@ def toFileName():
     if "2D" in lines[0]:
         dimension = "2D"
     if "3D" in lines[0]:
-        dimension = "2D"
+        dimension = "3D"
     shape = lines[2]
     width = int(shape.split(",")[0])
     height = int(shape.split(",")[1])

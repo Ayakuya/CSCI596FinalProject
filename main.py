@@ -10,9 +10,10 @@ def main():
     data = GUI.GUI()
     if data["D"] == "2D":
         flow2D.execute(data)
+        VTKReader.generateGif()
     else:
         flow3D.execute(data)
-    VTKReader.generateGif()
+        VTKReader.generateGif()
 
 
 if __name__ == '__main__':

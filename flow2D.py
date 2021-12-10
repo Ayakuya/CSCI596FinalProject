@@ -176,6 +176,9 @@ class Model:
 def execute(data):
     pr = cProfile.Profile()
     pr.enable()
+    # cuda
+    # s = Model(torch.device("cuda:0"), lt.D2Q9)
+    # cpu
     s = Model(torch.device("cpu"), lt.D2Q9)
     s.initialization(data)
     # s.setupLattice()

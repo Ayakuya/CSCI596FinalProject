@@ -160,7 +160,10 @@ class Model:
         plt.rcParams.update({'font.size': 16})
         plt.rc('font', family='serif')
         plt.rc('axes', axisbelow=True)
+        # cpu
         u = self.flow.units.convert_velocity_to_pu(self.lattice.u(self.simulation.f)).numpy()
+        # cuda
+        # u = self.flow.units.convert_velocity_to_pu(self.lattice.u(self.simulation.f)).cpu().numpy()
         u_norm = np.linalg.norm(u, axis=0)
         plt.imshow(u_norm)
         fig = matplotlib.pyplot.gcf()
@@ -172,6 +175,9 @@ class Model:
 def execute(data):
     pr = cProfile.Profile()
     pr.enable()
+    # cuda
+    # s = Model(torch.device("cuda:0"), lt.D3Q27)
+    # cpu
     s = Model(torch.device("cpu"), lt.D3Q27)
     s.initialization(data)
     # s.setupLattice()

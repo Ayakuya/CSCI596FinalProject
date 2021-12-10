@@ -8,8 +8,16 @@ def generateGif():
     reader = pyvista.get_reader(filename)
 
     plotter = pyvista.Plotter()
-    # Open a movie file
+
     plotter.open_gif("output.gif")
+    pos = [(0.0, 0.0, 1.0),
+           (0.0, 0.0, 0.0),
+           (0.0, 1.0, 0.0)]
+
+    # plotter.camera_set = True
+    # plotter.camera.zoom(0.00001)
+    # plotter.camera_position = 'xy'
+    # plotter.camera.view_frustum = 3
     mesh = reader.read()
     plotter.add_mesh(mesh)
 
@@ -36,7 +44,7 @@ def generateGif():
         plotter.add_mesh(mesh)
         plotter.render()
         plotter.write_frame()
-
+    plotter.close()
     # def reader():
     #     filenames = ['output_{}.vtr'.format(i) for i in range(4)]
     #
@@ -74,4 +82,4 @@ def generateGif():
     #     reader.Update()
     #
     #
-    # reader()
+    #
