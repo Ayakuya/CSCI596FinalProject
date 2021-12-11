@@ -28,6 +28,7 @@ class Obstacles:
         self.x = self.flow.units.convert_length_to_lu(x)
         self.y = self.flow.units.convert_length_to_lu(y)
         self.conditions = []
+        self.area = 0
 
     def setSquareObstacle(self, xpos, ypos, length):
         # Square:
@@ -41,11 +42,13 @@ class Obstacles:
                 else:
                     square[i, j] = False
         condition = square
+        self.area += length ** 2
         self.conditions.append(condition)
 
     def setCylinderObstacle(self, xpos, ypos, r):
         # Cylinder:
         condition = np.sqrt((self.x - xpos) ** 2 + (self.y - ypos) ** 2) <= r
+        self.area += np.pi * (r ** 2)
         self.conditions.append(condition)
 
     def setRectObstacle(self, xpos, ypos, xlength, ylength):
@@ -60,6 +63,7 @@ class Obstacles:
                 else:
                     rect[i, j] = False
         condition = rect
+        self.area += xlength * ylength
         self.conditions.append(condition)
 
     def setPolygonObstacle(self, polygon):
@@ -71,6 +75,7 @@ class Obstacles:
                 point = Point(i, j)
                 poly[i, j] = point.within(polygon)
         condition = poly
+        self.area += polygon.area
         self.conditions.append(condition)
 
     def setObstacle(self):
@@ -106,6 +111,7 @@ class Model:
         for c in data["Polygon"]:
             self.obstacle.setPolygonObstacle(Polygon(c))
         self.obstacle.setObstacle()
+        print(self.obstacle.area)
         flow = self.obstacle.flow
         self.setupFlow(flow)
         self.setupCollision("BGKCollision")
