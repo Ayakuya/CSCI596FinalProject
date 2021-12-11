@@ -15,7 +15,7 @@ def my_fmt(x):
     return '{:.2f}%'.format(x)
 
 
-def plot(filename, type):
+def plot(filename, type, labels):
     file = open(filename, encoding='utf-8')
     lines = file.readlines()
     lines = [line.rstrip() for line in lines]
@@ -40,8 +40,7 @@ def plot(filename, type):
     plt.rc('axes', axisbelow=True)
     # plt.grid(linestyle="--")
     plt.pie(tottime,
-            labels=["lettuce/boundary", "einsum", "lettuce/equilibrium", "pyevtk", "lettuce/streaming", "method where",
-                    "method roll", "method tensor", "method pow", "method tensordot"], autopct=my_fmt)
+            labels=labels, autopct=my_fmt)
 
     fig = matplotlib.pyplot.gcf()
     fig.set_size_inches(16, 10)
@@ -54,11 +53,16 @@ def plot(filename, type):
 def main():
     filename = "profile.txt"
 
-    plot(filename, "GPU")
+    labels = ["lettuce/boundary", "method einsum", "lettuce/equilibrium", "pyevtk", "lettuce/streaming", "method where",
+              "method roll", "method tensor", "method pow", "method tensordot"]
+    plot(filename, "GPU", labels)
 
     filename = "profile1.txt"
 
-    plot(filename, "CPU")
+    labels = ["lettuce/equilibrium", "lettuce/collision", "method where", "method einsum", "lettuce/simulation",
+              "method sum", "lettuce/boundary", "method pow", "method tensordot", "lettuce/lattices"]
+
+    plot(filename, "CPU", labels)
 
 
 if __name__ == '__main__':
