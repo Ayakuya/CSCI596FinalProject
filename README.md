@@ -24,7 +24,7 @@ This proposal is based on the profiling from following devices:
 1. GPU: GTX1070
 2. CPU: Intel(R) i7 CPU
 
-Due to the time limitation and devices limitation, many texture parts and 3D data analysis haven't done much. The main reason is that I can only borrow the GTX1070 which is a relatively old one and 3D simulation takes a long time. It's possible to spend more than two weeks doing the running processes if we want to have accurate data, like letting them run under a similar environment. I also reduced many descriptions. The big plan is fulfilling all the descriptions, analyzing 3D data, and providing a more detailed and deeper analysis. There are so many things that can be expanded because of the time limitation. Introduction, research preparation, result presentation and conclusion can be more comprehensive.
+Due to the time limitation and devices limitation, many texture parts and 3D data analysis haven't done much. The main reason is that I can only borrow the GTX1070 which is a relatively old one and 3D simulation takes a long time. It's possible to spend more than two weeks doing the running processes if we want to have accurate data, like letting them run under a similar environment. I also reduced many descriptions. The big plan is fulfilling all the descriptions, analyzing 3D data, and providing a more detailed and deeper analysis. There are so many things that can be expanded because of the time limitation. Introduction, research preparation, result presentation and conclusion can be more comprehensive. More ideas are in the proposal.
 
 ## Technologies & Libraries
 Project is created with:
